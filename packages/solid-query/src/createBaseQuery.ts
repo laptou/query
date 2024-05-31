@@ -142,6 +142,7 @@ export function createBaseQuery<
     new Observer(client(), defaultedOptions()),
   )
 
+  let refetch!: () => void;
   let observerResult = observer().getOptimisticResult(defaultedOptions())
   const [state, setState] =
     createStore<QueryObserverResult<TData, TError>>(observerResult)
@@ -226,11 +227,11 @@ export function createBaseQuery<
     Fixes #7275
     In a few cases, the observer could unmount before the resource is loaded.
     This leads to Suspense boundaries to be suspended indefinitely.
-    This resolver will be called when the observer is unmounting 
+    This resolver will be called when the observer is unmounting
     but the resource is still in a loading state
   */
   let resolver: ((value: ResourceData) => void) | null = null
-  const [queryResource, { refetch }] = createResource<ResourceData | undefined>(
+  const [queryResource, queryResourceFns] = createResource<ResourceData | undefined>(
     () => {
       const obs = observer()
       return new Promise((resolve, reject) => {
@@ -307,6 +308,8 @@ export function createBaseQuery<
       },
     },
   )
+
+  refetch = queryResourceFns.refetch;
 
   createComputed(
     on(
